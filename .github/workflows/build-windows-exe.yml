@@ -31,7 +31,7 @@ jobs:
         env:
           EXE_NAME: ${{ github.event.inputs.exe_name }}
         run: |
-          pyinstaller --onefile --name "$env:EXE_NAME" NewsDownloader.py
+          pyinstaller --onefile --name "$env:EXE_NAME" --add-data "templates;templates" NewsDownloader.py
 
       - name: 아티팩트 업로드
         uses: actions/upload-artifact@v4

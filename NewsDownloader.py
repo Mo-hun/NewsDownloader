@@ -14,6 +14,13 @@ DISPLAY = 100
 SORT = "date"
 NAVER_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %z"
 
+def get_resource_path(*paths):
+    if getattr(sys, "_MEIPASS", None):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(base_path, *paths)
 
 def remove_html_tags(text):
     if not text:
@@ -123,15 +130,16 @@ def autosize_excel(output):
 
         ws.column_dimensions[col_letter].width = min(max_length + 2, 60)
 
-    ws.column_dimensions["A"].width = 18
-    ws.column_dimensions["B"].width = 16
-    ws.column_dimensions["C"].width = 18
-    ws.column_dimensions["D"].width = 24
-    ws.column_dimensions["E"].width = 50
-    ws.column_dimensions["F"].width = 80
-    ws.column_dimensions["G"].width = 45
-    ws.column_dimensions["H"].width = 45
-    ws.column_dimensions["I"].width = 20
+    # 고정 폭 보정
+    ws.column_dimensions["A"].width = 18   # 검색어
+    ws.column_dimensions["B"].width = 16   # 언론사카테고리
+    ws.column_dimensions["C"].width = 18   # 언론사명
+    ws.column_dimensions["D"].width = 24   # 언론사도메인
+    ws.column_dimensions["E"].width = 55   # 제목
+    ws.column_dimensions["F"].width = 90   # 요약
+    ws.column_dimensions["G"].width = 45   # 언론사링크
+    ws.column_dimensions["H"].width = 45   # 네이버링크
+    ws.column_dimensions["I"].width = 20   # 작성일
 
     wb.save(output)
 
@@ -142,24 +150,8 @@ def load_template(template_path):
 
 
 def generate_html_review(rows, html_output_name, csv_output_name):
-    template_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "templates",
-        "NewsReviewTemplate.html"
-    )
+    template_path = get_resource_path("templates", "NewsReviewTemplate.html")
     template = load_template(template_path)
-
-    rows_json = json.dumps(rows, ensure_ascii=False)
-    html = (
-        template
-        .replace("__NEWS_ROWS_JSON__", rows_json)
-        .replace("__CSV_OUTPUT_NAME__", csv_output_name)
-        .replace("__NEWS_COUNT__", str(len(rows)))
-    )
-
-    with open(html_output_name, "w", encoding="utf-8") as f:
-        f.write(html)
-
 
 def main():
     if len(sys.argv) < 4:
