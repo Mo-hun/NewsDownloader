@@ -153,6 +153,18 @@ def generate_html_review(rows, html_output_name, csv_output_name):
     template_path = get_resource_path("templates", "NewsReviewTemplate.html")
     template = load_template(template_path)
 
+    rows_json = json.dumps(rows, ensure_ascii=False)
+
+    html = (
+        template
+        .replace("__NEWS_ROWS_JSON__", rows_json)
+        .replace("__CSV_OUTPUT_NAME__", csv_output_name)
+        .replace("__NEWS_COUNT__", str(len(rows)))
+    )
+
+    with open(html_output_name, "w", encoding="utf-8") as f:
+        f.write(html)
+
 def main():
     if len(sys.argv) < 4:
         print('사용법: NewsDownloader.exe "CLIENT_ID" "CLIENT_SECRET" "검색어1,검색어2"')
