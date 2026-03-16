@@ -1,0 +1,41 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+    inputs:
+      exe_name:
+        description: "NewsDownloader"
+        required: true
+        default: "언론 모니터링 (네이버 뉴스 다운)"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas openpyxl pyinstaller
+
+      - name: EXE 빌드
+        shell: powershell
+        env:
+          EXE_NAME: ${{ github.event.inputs.exe_name }}
+        run: |
+          pyinstaller --onefile --name "$env:EXE_NAME" NewsDownloader.py
+
+      - name: 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.exe_name }}-windows
+          path: dist/*.exe
+          if-no-files-found: error
