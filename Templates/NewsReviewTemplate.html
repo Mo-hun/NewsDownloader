@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>뉴스 선별 페이지</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            padding: 16px;
+            border-bottom: 1px solid #ddd;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+        }
+
+        .header button.gray {
+            background: #6b7280;
+        }
+
+        .header .info {
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 20px auto 0;
+            align-items: flex-start;
+        }
+
+        .list-panel {
+            flex: 0 0 58%;
+            min-width: 0;
+        }
+
+        .preview-panel {
+            flex: 0 0 42%;
+            position: sticky;
+            top: 90px;
+            align-self: flex-start;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+        }
+
+        .news-card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .news-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        .news-card.active {
+            border-color: #93c5fd;
+            box-shadow: 0 6px 16px rgba(37,99,235,0.12);
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #e0ecff;
+            color: #1d4ed8;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .date {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #111827;
+            line-height: 1.4;
+        }
+
+        .summary {
+            font-size: 15px;
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 14px;
+            white-space: pre-wrap;
+        }
+
+        .links {
+            margin-bottom: 14px;
+        }
+
+        .links a {
+            display: inline-block;
+            margin-right: 12px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .decision {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .choice {
+            position: relative;
+            display: inline-block;
+        }
+
+        .choice input[type="radio"] {
+            display: none;
+        }
+
+        .choice span {
+            display: inline-block;
+            min-width: 88px;
+            text-align: center;
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            color: #374151;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .choice span:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        .choice.target input[type="radio"]:checked + span {
+            background: #dbeafe;
+            border-color: #60a5fa;
+            color: #1d4ed8;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.18);
+        }
+
+        .choice.exclude input[type="radio"]:checked + span {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+            color: #111827;
+            box-shadow: 0 4px 12px rgba(107,114,128,0.12);
+        }
+
+        .preview-box {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+            min-height: 760px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preview-actions a {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        #previewFrame {
+            width: 100%;
+            height: 700px;
+            border: 0;
+            display: none;
+            background: white;
+        }
+
+        .preview-empty {
+            padding: 40px 24px;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 1200px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .list-panel,
+            .preview-panel {
+                flex: 1 1 auto;
+                width: 100%;
+            }
+
+            .preview-panel {
+                position: static;
+            }
+
+            #previewFrame {
+                height: 500px;
+            }
+        }
+        .meta-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge.keyword {
+            background: #e0ecff;
+            color: #1d4ed8;
+        }
+
+        .badge.category {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .badge.press {
+            background: #e8f7ec;
+            color: #0f7b3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button onclick="setAll('대상')">전체 대상</button>
+        <button class="gray" onclick="setAll('제외')">전체 제외</button>
+        <button onclick="downloadCsv()">CSV 저장</button>
+        <div class="info">기사 수: __NEWS_COUNT__건 / 저장 형식: CSV</div>
+    </div>
+
+    <div class="layout">
+        <div class="list-panel">
+            <div class="container" id="newsList"></div>
+        </div>
+
+        <div class="preview-panel">
+            <div class="preview-box">
+                <div class="preview-header">
+                    <div class="preview-title">기사 미리보기</div>
+                    <div class="preview-actions">
+                        <a id="openPressLink" href="#" target="_blank">언론사 원문 새 탭</a>
+                        <a id="openNaverLink" href="#" target="_blank">네이버 기사 새 탭</a>
+                    </div>
+                </div>
+                <iframe id="previewFrame" title="기사 미리보기"></iframe>
+                <div class="preview-empty" id="previewEmpty">
+                    왼쪽 기사에서 링크를 누르면 여기에서 미리보기를 시도합니다.
+                    일부 언론사 사이트는 iframe 표시를 막아 둘 수 있어 새 탭으로 여는 것이 더 잘 될 수 있습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const NEWS_ROWS = __NEWS_ROWS_JSON__;
+        const CSV_OUTPUT_NAME = "__CSV_OUTPUT_NAME__";
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function renderNewsList() {
+            const list = document.getElementById("newsList");
+
+            const html = NEWS_ROWS.map((row, idx) => `
+                <div class="news-card" id="card_${idx}" data-index="${idx}" onclick="previewCard(${idx})">
+                    <div class="top-row">
+                        <div class="meta-left">
+                            <span class="badge keyword">${escapeHtml(row.검색어 || "")}</span>
+                            <span class="badge category">${escapeHtml(row.언론사카테고리 || "")}</span>
+                            <span class="badge press">${escapeHtml(row.언론사명 || "")}</span>
+                        </div>
+                        <div class="date">${escapeHtml(row.작성일 || "")}</div>
+                    </div>
+
+                    <div class="title">${escapeHtml(row.제목 || "")}</div>
+                    <div class="summary">${escapeHtml(row.요약 || "")}</div>
+
+                    <div class="links">
+                        <a href="${escapeHtml(row.언론사링크 || "")}"
+                           target="_blank"
+                           onclick="previewArticle(event, ${idx}, 'press')">언론사 원문</a>
+                        <a href="${escapeHtml(row.네이버링크 || "")}"
+                           target="_blank"
+                           onclick="previewArticle(event, ${idx}, 'naver')">네이버 기사</a>
+                    </div>
+
+                    <div class="decision" onclick="event.stopPropagation()">
+                        <label class="choice target">
+                            <input type="radio" name="decision_${idx}" value="대상">
+                            <span>대상</span>
+                        </label>
+                        <label class="choice exclude">
+                            <input type="radio" name="decision_${idx}" value="제외" checked>
+                            <span>제외</span>
+                        </label>
+                    </div>
+                </div>
+            `).join("");
+
+            list.innerHTML = html;
+        }
+
+        function clearActiveCards() {
+            document.querySelectorAll(".news-card").forEach(card => {
+                card.classList.remove("active");
+            });
+        }
+
+        function previewArticle(event, index, type) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const row = NEWS_ROWS[index];
+            const previewUrl = type === "press" ? (row.언론사링크 || "") : (row.네이버링크 || "");
+            const pressUrl = row.언론사링크 || "#";
+            const naverUrl = row.네이버링크 || "#";
+
+            if (!previewUrl) return;
+
+            const frame = document.getElementById("previewFrame");
+            const empty = document.getElementById("previewEmpty");
+            const openPressLink = document.getElementById("openPressLink");
+            const openNaverLink = document.getElementById("openNaverLink");
+
+            clearActiveCards();
+
+            const card = document.getElementById(`card_${index}`);
+            if (card) {
+                card.classList.add("active");
+            }
+
+            frame.style.display = "block";
+            empty.style.display = "none";
+            frame.src = previewUrl;
+
+            openPressLink.href = pressUrl;
+            openNaverLink.href = naverUrl;
+        }
+
+        function setAll(value) {
+            for (let i = 0; i < NEWS_ROWS.length; i++) {
+                const radios = document.getElementsByName(`decision_${i}`);
+                for (const radio of radios) {
+                    if (radio.value === value) {
+                        radio.checked = true;
+                    }
+                }
+            }
+        }
+
+        function csvEscape(value) {
+            if (value === null || value === undefined) return '""';
+            const str = String(value).replace(/"/g, '""');
+            return `"${str}"`;
+        }
+
+        function getDecision(index) {
+            const radios = document.getElementsByName(`decision_${index}`);
+            for (const radio of radios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return "";
+        }
+
+        function downloadCsv() {
+            const rows = [];
+            rows.push([
+                "검색어",
+                "언론사카테고리",
+                "언론사명",
+                "제목",
+                "요약",
+                "언론사링크",
+                "네이버링크",
+                "작성일",
+                "선별결과"
+            ]);
+
+            for (let i = 0; i < NEWS_ROWS.length; i++) {
+                const row = NEWS_ROWS[i];
+                rows.push([
+                    row.검색어 || "",
+                    row.언론사카테고리 || "",
+                    row.언론사명 || "",
+                    row.제목 || "",
+                    row.요약 || "",
+                    row.언론사링크 || "",
+                    row.네이버링크 || "",
+                    row.작성일 || "",
+                    getDecision(i)
+                ]);
+            }
+
+            const csvContent = "\ufeff" + rows
+                .map(row => row.map(csvEscape).join(","))
+                .join("\r\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = CSV_OUTPUT_NAME;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        renderNewsList();
+
+        if (NEWS_ROWS.length > 0) {
+            previewCard(0);
+        }
+        function previewCard(index) {
+            const row = NEWS_ROWS[index];
+            const pressUrl = row.언론사링크 || "";
+            const naverUrl = row.네이버링크 || "";
+            const previewUrl = pressUrl || naverUrl || "";
+
+            if (!previewUrl) return;
+
+            const frame = document.getElementById("previewFrame");
+            const empty = document.getElementById("previewEmpty");
+            const openPressLink = document.getElementById("openPressLink");
+            const openNaverLink = document.getElementById("openNaverLink");
+
+            clearActiveCards();
+
+            const card = document.getElementById(`card_${index}`);
+            if (card) {
+                card.classList.add("active");
+            }
+
+            frame.style.display = "block";
+            empty.style.display = "none";
+            frame.src = previewUrl;
+
+            openPressLink.href = pressUrl || "#";
+            openNaverLink.href = naverUrl || "#";
+        }
+    </script>
+</body>
+</html>

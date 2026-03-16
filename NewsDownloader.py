@@ -5,8 +5,10 @@ import json
 import pandas as pd
 import re
 import sys
+import os
 from datetime import datetime, timedelta, timezone
 from openpyxl import load_workbook
+from PressInfo import extract_press_info
 
 DISPLAY = 100
 SORT = "date"
@@ -77,13 +79,23 @@ def collect_news(client_id, client_secret, query):
 
             if pub_dt >= cutoff:
                 page_24_count += 1
+                
+                originallink = item.get("originallink", "")
+                naverlink = item.get("link", "")
+
+                # ⭐ 여기 추가
+                press_name, press_category, press_domain = extract_press_info(originallink)
+
                 rows.append({
                     "검색어": query,
+                    "언론사카테고리": press_category,
+                    "언론사명": press_name,
+                    "언론사도메인": press_domain,
                     "제목": remove_html_tags(item.get("title")),
                     "요약": remove_html_tags(item.get("description")),
-                    "언론사링크": item.get("originallink"),
-                    "네이버링크": item.get("link"),
-                    "작성일": pub_dt.strftime("%Y-%m-%d %H:%M:%S")
+                    "언론사링크": originallink,
+                    "네이버링크": naverlink,
+                    "작성일": pub_dt.strftime("%Y-%m-%d %H:%M:%S"),
                 })
 
         print(f"[{query}] 24시간 기사: {page_24_count}/{len(items)}")
@@ -111,22 +123,47 @@ def autosize_excel(output):
 
         ws.column_dimensions[col_letter].width = min(max_length + 2, 60)
 
-    # 자주 긴 컬럼은 고정폭으로 더 보기 좋게
-    if "B" in ws.column_dimensions:
-        ws.column_dimensions["B"].width = 50  # 제목
-    if "C" in ws.column_dimensions:
-        ws.column_dimensions["C"].width = 80  # 요약
-    if "D" in ws.column_dimensions:
-        ws.column_dimensions["D"].width = 40
-    if "E" in ws.column_dimensions:
-        ws.column_dimensions["E"].width = 40
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 16
+    ws.column_dimensions["C"].width = 18
+    ws.column_dimensions["D"].width = 24
+    ws.column_dimensions["E"].width = 50
+    ws.column_dimensions["F"].width = 80
+    ws.column_dimensions["G"].width = 45
+    ws.column_dimensions["H"].width = 45
+    ws.column_dimensions["I"].width = 20
 
     wb.save(output)
 
 
+def load_template(template_path):
+    with open(template_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def generate_html_review(rows, html_output_name, csv_output_name):
+    template_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "templates",
+        "NewsReviewTemplate.html"
+    )
+    template = load_template(template_path)
+
+    rows_json = json.dumps(rows, ensure_ascii=False)
+    html = (
+        template
+        .replace("__NEWS_ROWS_JSON__", rows_json)
+        .replace("__CSV_OUTPUT_NAME__", csv_output_name)
+        .replace("__NEWS_COUNT__", str(len(rows)))
+    )
+
+    with open(html_output_name, "w", encoding="utf-8") as f:
+        f.write(html)
+
+
 def main():
     if len(sys.argv) < 4:
-        print('사용법: 건설이슈모니터링.exe "CLIENT_ID" "CLIENT_SECRET" "검색어1,검색어2"')
+        print('사용법: NewsDownloader.exe "CLIENT_ID" "CLIENT_SECRET" "검색어1,검색어2"')
         sys.exit(1)
 
     client_id = sys.argv[1].strip()
@@ -150,19 +187,41 @@ def main():
 
     df = pd.DataFrame(all_rows)
 
+    column_order = [
+        "검색어",
+        "언론사카테고리",
+        "언론사명",
+        "언론사도메인",
+        "제목",
+        "요약",
+        "언론사링크",
+        "네이버링크",
+        "작성일",
+    ]
+
+    df = df[column_order]
+
+
     if "네이버링크" in df.columns:
         df = df.drop_duplicates(subset=["네이버링크"])
 
     if "작성일" in df.columns:
         df = df.sort_values(by="작성일", ascending=False)
 
-    today = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output = f"건설이슈모니터링_{today}.xlsx"
+    rows_for_output = df.to_dict(orient="records")
 
-    df.to_excel(output, index=False)
-    autosize_excel(output)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    excel_output = f"건설이슈언론모니터링_{timestamp}.xlsx"
+    html_output = f"건설이슈언론모니터링_{timestamp}.html"
+    csv_output = f"건설이슈언론모니터링_선별결과_{timestamp}.csv"
 
-    print("저장 완료:", output)
+    df.to_excel(excel_output, index=False)
+    autosize_excel(excel_output)
+    generate_html_review(rows_for_output, html_output, csv_output)
+
+    print("엑셀 저장 완료:", os.path.abspath(excel_output))
+    print("HTML 저장 완료:", os.path.abspath(html_output))
+    print("HTML에서 CSV 저장 시 파일명:", csv_output)
 
 
 if __name__ == "__main__":
