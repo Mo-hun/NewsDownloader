@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       exe_name:
-        description: "NewsDownloader"
+        description: "언론 모니터링 (네이버 뉴스 다운)"
         required: true
-        default: "언론 모니터링 (네이버 뉴스 다운)"
+        default: "NewsDownloader"
 
 jobs:
   build:
