@@ -149,7 +149,7 @@ def load_template(template_path):
         return f.read()
 
 
-def generate_html_review(rows, html_output_name, csv_output_name):
+def generate_html_review(rows, html_output_name, csv_output_name, json_output_name):
     template_path = get_resource_path("templates", "NewsReviewTemplate.html")
     template = load_template(template_path)
 
@@ -159,6 +159,7 @@ def generate_html_review(rows, html_output_name, csv_output_name):
         template
         .replace("__NEWS_ROWS_JSON__", rows_json)
         .replace("__CSV_OUTPUT_NAME__", csv_output_name)
+        .replace("__JSON_OUTPUT_NAME__", json_output_name)
         .replace("__NEWS_COUNT__", str(len(rows)))
     )
 
@@ -218,14 +219,16 @@ def main():
     excel_output = f"건설이슈언론모니터링_{timestamp}.xlsx"
     html_output = f"건설이슈언론모니터링_{timestamp}.html"
     csv_output = f"건설이슈언론모니터링_선별결과_{timestamp}.csv"
+    json_output = f"건설이슈언론모니터링_선별결과_{timestamp}.json"
 
     df.to_excel(excel_output, index=False)
     autosize_excel(excel_output)
-    generate_html_review(rows_for_output, html_output, csv_output)
+    generate_html_review(rows_for_output, html_output, csv_output, json)
 
     print("엑셀 저장 완료:", os.path.abspath(excel_output))
     print("HTML 저장 완료:", os.path.abspath(html_output))
     print("HTML에서 CSV 저장 시 파일명:", csv_output)
+    print("HTML에서 JSON 저장 시 파일명:", json_output)
 
 
 if __name__ == "__main__":

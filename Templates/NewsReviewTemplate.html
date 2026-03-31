@@ -286,8 +286,10 @@
     <div class="header">
         <button onclick="setAll('대상')">전체 대상</button>
         <button class="gray" onclick="setAll('제외')">전체 제외</button>
+        <button onclick="downloadJson(true)">JSON 저장</button>
+        <button onclick="downloadJson(false)">JSON 전체 저장 (백업용) </button>
         <button onclick="downloadCsv()">CSV 저장</button>
-        <div class="info">기사 수: __NEWS_COUNT__건 / 저장 형식: CSV</div>
+        <div class="info">기사 수: __NEWS_COUNT__건 / 저장 형식: JSON, CSV</div>
     </div>
 
     <div class="layout">
@@ -316,6 +318,7 @@
     <script>
         const NEWS_ROWS = __NEWS_ROWS_JSON__;
         const CSV_OUTPUT_NAME = "__CSV_OUTPUT_NAME__";
+        const JSON_OUTPUT_NAME = "__JSON_OUTPUT_NAME__";
 
         function escapeHtml(text) {
             if (text === null || text === undefined) return "";
@@ -479,6 +482,46 @@
 
         if (NEWS_ROWS.length > 0) {
             previewCard(0);
+        }
+        function downloadJson(targetOnly = false) {
+
+            const result = [];
+
+            for (let i = 0; i < NEWS_ROWS.length; i++) {
+                const row = NEWS_ROWS[i];
+                const decision = getDecision(i);
+
+                if (targetOnly && decision !== "대상") {
+                    continue;
+                }
+
+                result.push({
+                    검색어: row.검색어 || "",
+                    언론사카테고리: row.언론사카테고리 || "",
+                    언론사명: row.언론사명 || "",
+                    언론사도메인: row.언론사도메인 || "",
+                    제목: row.제목 || "",
+                    요약: row.요약 || "",
+                    언론사링크: row.언론사링크 || "",
+                    네이버링크: row.네이버링크 || "",
+                    작성일: row.작성일 || "",
+                    선별결과: decision
+                });
+            }
+
+            const jsonContent = JSON.stringify(result, null, 2);
+
+            const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+            const link = document.createElement("a");
+
+            link.href = URL.createObjectURL(blob);
+            link.download = targetOnly
+                ? JSON_OUTPUT_NAME
+                : "전체_"+JSON_OUTPUT_NAME;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
         function previewCard(index) {
             const row = NEWS_ROWS[index];
