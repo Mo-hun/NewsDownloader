@@ -223,7 +223,7 @@ def main():
 
     df.to_excel(excel_output, index=False)
     autosize_excel(excel_output)
-    generate_html_review(rows_for_output, html_output, csv_output, json)
+    generate_html_review(rows_for_output, html_output, csv_output, json_output)
 
     print("엑셀 저장 완료:", os.path.abspath(excel_output))
     print("HTML 저장 완료:", os.path.abspath(html_output))
