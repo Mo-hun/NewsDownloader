@@ -219,7 +219,7 @@ def main():
     excel_output = f"건설이슈언론모니터링_{timestamp}.xlsx"
     html_output = f"건설이슈언론모니터링_{timestamp}.html"
     csv_output = f"건설이슈언론모니터링_선별결과_{timestamp}.csv"
-    json_output = f"건설이슈언론모니터링_선별결과_{timestamp}.json"
+    json_output = f"{timestamp}.json"
 
     df.to_excel(excel_output, index=False)
     autosize_excel(excel_output)

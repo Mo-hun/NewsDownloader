@@ -516,8 +516,8 @@
 
             link.href = URL.createObjectURL(blob);
             link.download = targetOnly
-                ? JSON_OUTPUT_NAME
-                : "전체_"+JSON_OUTPUT_NAME;
+                ? "건설이슈언론모니터링_선별결과_"+JSON_OUTPUT_NAME
+                : "건설이슈언론모니터링_전체_"+JSON_OUTPUT_NAME;
 
             document.body.appendChild(link);
             link.click();
