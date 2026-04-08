@@ -49,11 +49,20 @@ def fetch_news_page(client_id, client_secret, query, start):
         return json.loads(body)
 
 
-def collect_news(client_id, client_secret, query):
+def collect_news(client_id, client_secret, query, mode="24h", target_date=None):
     rows = []
 
     now = datetime.now(timezone(timedelta(hours=9)))
-    cutoff = now - timedelta(hours=24)
+
+    if mode == "24h":
+        cutoff_start = now - timedelta(hours=24)
+        cutoff_end = now
+
+    elif mode == "date":
+        start_dt = datetime.strptime(target_date, "%Y-%m-%d")
+        cutoff_start = start_dt.replace(tzinfo=timezone(timedelta(hours=9)))
+        cutoff_end = cutoff_start + timedelta(days=1)
+
     start = 1
 
     while start <= 1000:
@@ -85,7 +94,7 @@ def collect_news(client_id, client_secret, query):
             except Exception:
                 continue
 
-            if pub_dt >= cutoff:
+            if cutoff_start <= pub_dt < cutoff_end:
                 page_24_count += 1
 
                 originallink = item.get("originallink", "")
