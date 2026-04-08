@@ -14,13 +14,14 @@ DISPLAY = 100
 SORT = "date"
 NAVER_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %z"
 
+
 def get_resource_path(*paths):
     if getattr(sys, "_MEIPASS", None):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(os.path.abspath(__file__))
-
     return os.path.join(base_path, *paths)
+
 
 def remove_html_tags(text):
     if not text:
@@ -86,11 +87,10 @@ def collect_news(client_id, client_secret, query):
 
             if pub_dt >= cutoff:
                 page_24_count += 1
-                
+
                 originallink = item.get("originallink", "")
                 naverlink = item.get("link", "")
 
-                # ⭐ 여기 추가
                 press_name, press_category, press_domain = extract_press_info(originallink)
 
                 rows.append({
@@ -115,6 +115,23 @@ def collect_news(client_id, client_secret, query):
     return rows
 
 
+def build_queries(required_keywords, optional_keywords):
+    required_keywords = [k.strip() for k in required_keywords if k and k.strip()]
+    optional_keywords = [k.strip() for k in optional_keywords if k and k.strip()]
+
+    if not required_keywords:
+        raise ValueError("필수 키워드는 1개 이상 필요합니다.")
+
+    if not optional_keywords:
+        return list(dict.fromkeys(required_keywords))
+
+    queries = []
+    for required_keyword in required_keywords:
+        for optional_keyword in optional_keywords:
+            queries.append(f"{required_keyword} {optional_keyword}".strip())
+
+    return list(dict.fromkeys(queries))
+
 def autosize_excel(output):
     wb = load_workbook(output)
     ws = wb.active
@@ -130,16 +147,15 @@ def autosize_excel(output):
 
         ws.column_dimensions[col_letter].width = min(max_length + 2, 60)
 
-    # 고정 폭 보정
-    ws.column_dimensions["A"].width = 18   # 검색어
-    ws.column_dimensions["B"].width = 16   # 언론사카테고리
-    ws.column_dimensions["C"].width = 18   # 언론사명
-    ws.column_dimensions["D"].width = 24   # 언론사도메인
-    ws.column_dimensions["E"].width = 55   # 제목
-    ws.column_dimensions["F"].width = 90   # 요약
-    ws.column_dimensions["G"].width = 45   # 언론사링크
-    ws.column_dimensions["H"].width = 45   # 네이버링크
-    ws.column_dimensions["I"].width = 20   # 작성일
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 16
+    ws.column_dimensions["C"].width = 18
+    ws.column_dimensions["D"].width = 24
+    ws.column_dimensions["E"].width = 55
+    ws.column_dimensions["F"].width = 90
+    ws.column_dimensions["G"].width = 45
+    ws.column_dimensions["H"].width = 45
+    ws.column_dimensions["I"].width = 20
 
     wb.save(output)
 
@@ -166,19 +182,30 @@ def generate_html_review(rows, html_output_name, csv_output_name, json_output_na
     with open(html_output_name, "w", encoding="utf-8") as f:
         f.write(html)
 
+
 def main():
-    if len(sys.argv) < 4:
-        print('사용법: NewsDownloader.exe "CLIENT_ID" "CLIENT_SECRET" "검색어1,검색어2"')
+    if len(sys.argv) < 5:
+        print('사용법: NewsDownloader.exe "CLIENT_ID" "CLIENT_SECRET" "필수키워드1,필수키워드2" "선택키워드1,선택키워드2"')
+        print('예시: NewsDownloader.exe "id" "secret" "한전,한국전력공사" "민원,건설,철탑,송전선로"')
         sys.exit(1)
 
     client_id = sys.argv[1].strip()
     client_secret = sys.argv[2].strip()
-    queries_arg = sys.argv[3].strip()
+    required_arg = sys.argv[3].strip()
+    optional_arg = sys.argv[4].strip()
 
-    queries = [q.strip() for q in queries_arg.split(",") if q.strip()]
-    if not queries:
-        print("검색어가 비어 있습니다.")
+    required_keywords = [q.strip() for q in required_arg.split(",") if q.strip()]
+    optional_keywords = [q.strip() for q in optional_arg.split(",") if q.strip()]
+
+    try:
+        queries = build_queries(required_keywords, optional_keywords)
+    except ValueError as e:
+        print(str(e))
         sys.exit(1)
+
+    print("생성된 검색어:")
+    for query in queries:
+        print("-", query)
 
     all_rows = []
 
@@ -205,7 +232,6 @@ def main():
     ]
 
     df = df[column_order]
-
 
     if "네이버링크" in df.columns:
         df = df.drop_duplicates(subset=["네이버링크"])
